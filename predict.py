@@ -31,8 +31,6 @@ class KabuQRNN:
             'keep':2,
             'term':64,
             'predict':20,
-            #'category':(-.3,.0,+.3)
-            'category':(-.07,-.03,-.01,-.005,.0,+.005,+.01,+.03,+.07),
             }
         self._ml = {'hidden':128,'epoch':2000,'batch':1024}
         self._scaler = MinMaxScaler(feature_range=(-1, 1))
@@ -46,12 +44,6 @@ class KabuQRNN:
         #計算に利用しない列を削除
         self._data = self._data.drop('Volume',axis=1)
         self._data = self._data.drop('Adj Close',axis=1)
-        '''
-        self._data = self._data.drop('Close',axis=1)
-        self._data = self._data.drop('High',axis=1)
-        self._data = self._data.drop('Low',axis=1)
-        self._data = self._data.drop('Adj Close',axis=1)
-        '''
 
         #列名を番号にする(後でソートしても順番を維持するため)前に退避する
         self._columns = self._data.columns.values
@@ -181,6 +173,7 @@ class KabuQRNN:
         return model,base
 
     def _calculate(self,model,x,y,batch_size=512):
+        split = 20./float(len(y))
         early_stopping = EarlyStopping(patience=50, verbose=1)
         history = model.fit(
             x, y,
@@ -333,8 +326,6 @@ if __name__ == '__main__':
             study = optuna.create_study(study_name=name,storage='sqlite:///'+db_name,direction='minimize')
         study.optimize(f,n_trials=args.optimize)
 
-        best = study.best_params
-        parameters[name] = {
             'model':{
                 'layers':[best['layer_r'],best['layer_w']],
                 'hidden':best['hidden'],
