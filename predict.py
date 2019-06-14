@@ -326,6 +326,7 @@ if __name__ == '__main__':
             study = optuna.create_study(study_name=name,storage='sqlite:///'+db_name,direction='minimize')
         study.optimize(f,n_trials=args.optimize)
 
+        best = study.best_params
         parameters[name] = {
             'model':{
                 'layers':[best['layer_r'],best['layer_w']],
