@@ -178,7 +178,7 @@ class KabuQRNN:
         return model,base
 
     def _calculate(self,model,x,y,batch_size=512):
-        split = self._config['validate']./float(len(y))
+        split = float(self._config['validate'])/float(len(y))
         early_stopping = EarlyStopping(patience=self._ml['patience'], verbose=1)
         history = model.fit(
             x, y,
