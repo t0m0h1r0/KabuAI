@@ -2,13 +2,13 @@
     "QRNN": {
         "model": {
             "layers": [
-                1,
-                7
+                6,
+                1
             ],
-            "hidden": 209,
+            "hidden": 213,
             "activation": "sigmoid",
             "optimizer": "nadam",
-            "dropout_rate": 0.04316616971146543
+            "dropout_rate": 0.48171373341980633
         },
         "learning": {
             "batch_size": 512
