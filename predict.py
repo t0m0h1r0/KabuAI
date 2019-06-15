@@ -106,10 +106,10 @@ class KabuQRNN:
         wave = np.concatenate(wave,axis=2)
 
         y = after.values
-        rx = np.split(dataset,[len(y)])[0]
-        wx = np.split(wave,[len(y)])[0]
+        rx = np.split(dataset,[len(y)])
+        wx = np.split(wave,[len(y)])
 
-        return [rx,wx],y
+        return [rx,wx],y,[rz,wz]
 
     def _objective(self,x,y,trial):
         layer_r = trial.suggest_int('layer_r',1,10)
@@ -356,7 +356,7 @@ if __name__ == '__main__':
 
     #学習
     if(args.learn):
-        x,y = a._generate(data)
+        x,y,z = a._generate(data)
         model,base = a._build(**parameters[name]['model'])
         base.summary()
         a._calculate(model,x,y,**parameters[name]['learning'])
@@ -365,7 +365,7 @@ if __name__ == '__main__':
     #ハイパーパラメタ最適化
     elif(args.optimize>0):
         import optuna, functools
-        x,y = a._generate(data)
+        x,y,z = a._generate(data)
         f = functools.partial(a._objective,x,y)
 
         db_name = 'study.db'
@@ -393,7 +393,7 @@ if __name__ == '__main__':
 
     #過去データとの比較
     elif(args.compare_all):
-        x,y = a._generate(data)
+        x,y,z = a._generate(data)
         model,base = a._build(**parameters[name]['model'])
         a._load(model)
         a._validate(model,x,y)
@@ -408,7 +408,7 @@ if __name__ == '__main__':
 
     #予測
     else:
-        x,y = a._generate(data)
+        x,y,z = a._generate(data)
         model,base = a._build(**parameters[name]['model'])
         a._load(model)
         a._predict(model,data)
