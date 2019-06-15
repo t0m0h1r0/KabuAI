@@ -106,8 +106,8 @@ class KabuQRNN:
         wave = np.concatenate(wave,axis=2)
 
         y = after.values
-        rx = np.split(dataset,[len(y)])
-        wx = np.split(wave,[len(y)])
+        rx,rz = np.split(dataset,[len(y)])
+        wx,wz = np.split(wave,[len(y)])
 
         return [rx,wx],y,[rz,wz]
 
