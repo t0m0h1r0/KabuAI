@@ -17,13 +17,13 @@
     "LSTM": {
         "model": {
             "layers": [
-                10,
-                6
+                5,
+                5
             ],
-            "hidden": 134,
-            "activation": "sigmoid",
-            "optimizer": "nadam",
-            "dropout_rate": 0.09715022140847462
+            "hidden": 213,
+            "activation": "relu",
+            "optimizer": "adam",
+            "dropout_rate": 0.33502500241711897
         },
         "learning": {
             "batch_size": 512
