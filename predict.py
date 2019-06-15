@@ -256,6 +256,48 @@ class KabuLSTM(KabuQRNN):
         model.compile(loss='mse', optimizer=optimizer, metrics=['accuracy'])
         return model,base
 
+class KabuGRU(KabuQRNN):
+    def _build(self, layers=[4,4], hidden=128, activation='sigmoid', optimizer='adam', dropout_rate=0.2):
+        days = self._config['term']
+        dimension = len(self._data.columns)
+
+        input_raw = Input(shape=(days,dimension))
+        x = input_raw
+        for k in range(layers[0]):
+            if k != layers[0]-1:
+                s = True
+            else:
+                s = False
+            x = Dropout(dropout_rate)(x)
+            x = Bidirectional(GRU(
+                units=hidden,
+                return_sequences=s,
+                ))(x)
+
+        input_wav = Input(shape=(dimension,days))
+        y = input_wav
+        for k in range(layers[1]):
+            if k != layers[1]-1:
+                s = True
+            else:
+                s = False
+            y = Dropout(dropout_rate)(y)
+            y = Bidirectional(GRU(
+                units=hidden,
+                return_sequences=s,
+                ))(y)
+
+        merged = Concatenate()([x,y])
+        label = Dense( units= dimension )(merged)
+        output = Activation(activation)(label)
+
+        model = Model(inputs=[input_raw,input_wav],outputs=output)
+        base = model
+        if self._gpus>1:
+            model = multi_gpu_model(model,gpus=self._gpus)
+        model.compile(loss='mse', optimizer=optimizer, metrics=['accuracy'])
+        return model,base
+
 def download(filename,code='^N225'):
     import pandas_datareader.data as pdr
     import yfinance as yf
@@ -272,11 +314,17 @@ if __name__ == '__main__':
     import json
     json_filename = 'param.json'
 
+    _methods = {
+        'QRNN': KabuQRNN,
+        'LSTM': KabuLSTM,
+        'GRU': KabuGRU,
+    }
+
     #コマンド引数
     import argparse as ap
     parser = ap.ArgumentParser()
     parser.add_argument('-c','--code',type=str,default='^N225')
-    parser.add_argument('-m','--method',type=str,choices=['QRNN','LSTM'],default='QRNN')
+    parser.add_argument('-m','--method',type=str,choices=_methods.keys(),default='QRNN')
     parser.add_argument('-g','--gpus',type=int,default=1)
     parser.add_argument('-l','--learn',action='store_true')
     parser.add_argument('-o','--optimize',nargs='?',type=int,const=1,default=0)
@@ -301,12 +349,7 @@ if __name__ == '__main__':
 
     #計算インスタンス作成
     name = args.method
-    if(name=='QRNN'):
-        a=KabuQRNN(filename=csv_filename,gpus=args.gpus)
-    elif(name=='LSTM'):
-        a=KabuLSTM(filename=csv_filename,gpus=args.gpus)
-    else:
-        raise
+    a = _methods[name](filename=csv_filename,gpus=args.gpus)
 
     #データ準備
     data = a._read()
