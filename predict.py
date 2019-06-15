@@ -22,6 +22,11 @@ from sklearn.preprocessing import MinMaxScaler, PowerTransformer, FunctionTransf
 from qrnn import QRNN
 import scipy.stats as ss
 
+import tensorflow as tf
+config = tf.ConfigProto()
+config.gpu_options.allow_growth = True
+session = tf.Session(config=config)
+
 class KabuQRNN:
     def __init__(self,filename='^N225.csv',name='ML',gpus=1):
         self._name=name
@@ -134,7 +139,11 @@ class KabuQRNN:
     def _build(self, layers=[4,4], hidden=128, activation='sigmoid', optimizer='adam', dropout_rate=0.2):
         days = self._config['term']
         dimension = len(self._data.columns)
-        window=2
+        window=days
+        kernel_initializer = {
+            'relu':'he_uniform',
+            'sigmoid':'glorot_uniform',
+        }
 
         input_raw = Input(shape=(days,dimension))
         x = input_raw
@@ -149,6 +158,7 @@ class KabuQRNN:
                 window_size=window,
                 return_sequences=s,
                 stride=1,
+                activation='relu',
                 )(x)
 
         input_wav = Input(shape=(dimension,days))
@@ -164,10 +174,14 @@ class KabuQRNN:
                 window_size=window,
                 return_sequences=s,
                 stride=1,
+                activation='relu',
                 )(y)
 
         merged = Concatenate()([x,y])
-        label = Dense( units= dimension )(merged)
+        label = Dense(
+            units= dimension,
+            kernel_initializer=kernel_initializer[activation],
+            )(merged)
         output = Activation(activation)(label)
 
         model = Model(inputs=[input_raw,input_wav],outputs=output)
@@ -218,6 +232,10 @@ class KabuLSTM(KabuQRNN):
     def _build(self, layers=[4,4], hidden=128, activation='sigmoid', optimizer='adam', dropout_rate=0.2):
         days = self._config['term']
         dimension = len(self._data.columns)
+        kernel_initializer = {
+            'relu':'he_uniform',
+            'sigmoid':'glorot_uniform',
+        }
 
         input_raw = Input(shape=(days,dimension))
         x = input_raw
@@ -246,7 +264,10 @@ class KabuLSTM(KabuQRNN):
                 ))(y)
 
         merged = Concatenate()([x,y])
-        label = Dense( units= dimension )(merged)
+        label = Dense(
+            units= dimension,
+            kernel_initializer=kernel_initializer[activation],
+            )(merged)
         output = Activation(activation)(label)
 
         model = Model(inputs=[input_raw,input_wav],outputs=output)
@@ -260,6 +281,10 @@ class KabuGRU(KabuQRNN):
     def _build(self, layers=[4,4], hidden=128, activation='sigmoid', optimizer='adam', dropout_rate=0.2):
         days = self._config['term']
         dimension = len(self._data.columns)
+        kernel_initializer = {
+            'relu':'he_uniform',
+            'sigmoid':'glorot_uniform',
+        }
 
         input_raw = Input(shape=(days,dimension))
         x = input_raw
@@ -288,7 +313,10 @@ class KabuGRU(KabuQRNN):
                 ))(y)
 
         merged = Concatenate()([x,y])
-        label = Dense( units= dimension )(merged)
+        label = Dense(
+            units= dimension,
+            kernel_initializer=kernel_initializer[activation],
+            )(merged)
         output = Activation(activation)(label)
 
         model = Model(inputs=[input_raw,input_wav],outputs=output)
