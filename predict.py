@@ -71,7 +71,6 @@ class KabuQRNN:
 
     def _generate(self, data):
         term = self._config['term']
-        keep = self._config['keep']
 
         #当日を含めてterm日間のデータを横に並べる
         before = pd.concat([data.shift(+k) for k in range(term)], axis=1, keys=range(term))

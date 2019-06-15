@@ -28,5 +28,20 @@
         "learning": {
             "batch_size": 512
         }
+    },
+    "GRU": {
+        "model": {
+            "layers": [
+                4,
+                10
+            ],
+            "hidden": 73,
+            "activation": "relu",
+            "optimizer": "nadam",
+            "dropout_rate": 0.4825230294234679
+        },
+        "learning": {
+            "batch_size": 512
+        }
     }
 }
