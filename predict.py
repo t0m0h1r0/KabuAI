@@ -27,12 +27,17 @@ class KabuQRNN:
         self._data =[]
         self._filename = filename
         self._config = {
-            'days':500,
-            'keep':2,
-            'term':64,
-            'predict':20,
+            'days':1000,    #データとして使用する日数
+            'keep':2,    #keep-1日後を予測
+            'term':64,  #1回の予測に使用するデータ数
+            'predict':20,   #予測を行う日数
+            'validate':10,  #学習において評価に使用する日数
             }
-        self._ml = {'hidden':128,'epoch':2000,'batch':1024}
+        self._ml = {
+            'epoch':2000,   #最大Epoch数
+            'verbose':0,    #情報出力レベル
+            'patience':50,  #学習打ち切りまでのEpoch数
+            }
         self._scaler = MinMaxScaler(feature_range=(-1, 1))
         #self._scaler = PowerTransformer(method='box-cox',standardize=True)
         #self._scaler = FunctionTransformer(func=lambda x:x, inverse_func=lambda x:x)
@@ -173,14 +178,15 @@ class KabuQRNN:
         return model,base
 
     def _calculate(self,model,x,y,batch_size=512):
-        split = 20./float(len(y))
-        early_stopping = EarlyStopping(patience=50, verbose=1)
+        split = self._config['validate']./float(len(y))
+        early_stopping = EarlyStopping(patience=self._ml['patience'], verbose=1)
         history = model.fit(
             x, y,
             epochs=self._ml['epoch'],
             batch_size=batch_size,
             validation_split=split,
             shuffle=False,
+            verbose=self._ml['verbose'],
             callbacks=[early_stopping])
         return history
 
