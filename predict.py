@@ -23,7 +23,8 @@ from qrnn import QRNN
 import scipy.stats as ss
 
 class KabuQRNN:
-    def __init__(self,filename='^N225.csv',gpus=1):
+    def __init__(self,filename='^N225.csv',name='ML',gpus=1):
+        self._name=name
         self._data =[]
         self._filename = filename
         self._config = {
@@ -64,10 +65,10 @@ class KabuQRNN:
         return data
 
     def _save(self,model):
-        model.save(self._filename+'.h5')
+        model.save('%s.%s.h5'%(self._filename,self._name))
 
     def _load(self,model):
-        model.load_weights(self._filename+'.h5')
+        model.load_weights('%s.%s.h5'%(self._filename,self._name))
 
     def _generate(self, data):
         term = self._config['term']
@@ -348,7 +349,7 @@ if __name__ == '__main__':
 
     #計算インスタンス作成
     name = args.method
-    a = _methods[name](filename=csv_filename,gpus=args.gpus)
+    a = _methods[name](filename=csv_filename,name=name,gpus=args.gpus)
 
     #データ準備
     data = a._read()
