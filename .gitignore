@@ -1,6 +1,7 @@
 *.csv
 *.h5
 *.db
+qrnn.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
