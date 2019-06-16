@@ -16,16 +16,22 @@ from keras.optimizers import Adam, RMSprop
 from keras.callbacks import EarlyStopping
 from keras.utils.np_utils import to_categorical
 from keras.utils import multi_gpu_model
+from keras import backend as K
 
 from sklearn.preprocessing import MinMaxScaler, PowerTransformer, FunctionTransformer
 
 from qrnn import QRNN
 import scipy.stats as ss
 
-import tensorflow as tf
-config = tf.ConfigProto()
-config.gpu_options.allow_growth = True
-session = tf.Session(config=config)
+class KerasSession:
+    def __enter__(self):
+        #メモリを動的に拡張
+        cfg = K.tf.ConfigProto()
+        cfg.gpu_options.allow_growth = True
+        K.set_session(K.tf.Session(config=cfg))
+    def __exit__(self):
+        #繰り返し実行するとメモリリークするので、セッションを一旦終了する
+        K.clear_session()
 
 class KabuQRNN:
     def __init__(self,filename='^N225.csv',name='ML',gpus=1):
@@ -117,6 +123,11 @@ class KabuQRNN:
         return [rx,wx],y,[rz,wz]
 
     def _objective(self,x,y,trial):
+        #メモリを動的に拡張
+        cfg = K.tf.ConfigProto()
+        cfg.gpu_options.allow_growth = True
+        K.set_session(K.tf.Session(config=cfg))
+
         layer_r = trial.suggest_int('layer_r',1,10)
         layer_w = trial.suggest_int('layer_w',1,10)
         hidden = trial.suggest_int('hidden',64,256)
@@ -133,6 +144,11 @@ class KabuQRNN:
             dropout_rate=dropout_rate,
             )
         history = self._calculate(model,x,y,batch_size=batch_size)
+
+        #繰り返し実行するとメモリリークするので、セッションを一旦終了する
+        del model
+        K.clear_session()
+
         return np.amin(history.history['val_loss'])
 
 
