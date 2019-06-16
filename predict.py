@@ -29,8 +29,8 @@ class KerasSession:
         cfg = K.tf.ConfigProto()
         cfg.gpu_options.allow_growth = True
         K.set_session(K.tf.Session(config=cfg))
-    def __exit__(self):
-        #繰り返し実行するとメモリリークするので、セッションを一旦終了する
+    def __exit__(self, ex_value, ex_type, trace):
+        #繰り返し実行するとメモリリークするので、セッションを一旦クリアする
         K.clear_session()
 
 class KabuQRNN:
@@ -123,11 +123,6 @@ class KabuQRNN:
         return [rx,wx],y,[rz,wz]
 
     def _objective(self,x,y,trial):
-        #メモリを動的に拡張
-        cfg = K.tf.ConfigProto()
-        cfg.gpu_options.allow_growth = True
-        K.set_session(K.tf.Session(config=cfg))
-
         layer_r = trial.suggest_int('layer_r',1,10)
         layer_w = trial.suggest_int('layer_w',1,10)
         hidden = trial.suggest_int('hidden',64,256)
@@ -136,18 +131,15 @@ class KabuQRNN:
         optimizer = trial.suggest_categorical('optimizer', ['adam', 'rmsprop', 'adamax', 'nadam'])
         batch_size = trial.suggest_int('batch_size', 512, 512)
 
-        model, base = self._build(
-            layers=[layer_r,layer_w],
-            hidden=hidden,
-            activation=activation,
-            optimizer=optimizer,
-            dropout_rate=dropout_rate,
-            )
-        history = self._calculate(model,x,y,batch_size=batch_size)
-
-        #繰り返し実行するとメモリリークするので、セッションを一旦終了する
-        del model
-        K.clear_session()
+        with KerasSession():
+            model, base = self._build(
+                layers=[layer_r,layer_w],
+                hidden=hidden,
+                activation=activation,
+                optimizer=optimizer,
+                dropout_rate=dropout_rate,
+                )
+            history = self._calculate(model,x,y,batch_size=batch_size)
 
         return np.amin(history.history['val_loss'])
 
@@ -209,7 +201,11 @@ class KabuQRNN:
 
     def _calculate(self,model,x,y,batch_size=512):
         split = float(self._config['validate'])/float(len(y))
-        early_stopping = EarlyStopping(patience=self._ml['patience'], verbose=1)
+        early_stopping = EarlyStopping(
+            patience=self._ml['patience'],
+            verbose=1,
+            restore_best_weights=True,
+            )
         history = model.fit(
             x, y,
             epochs=self._ml['epoch'],
@@ -401,10 +397,11 @@ if __name__ == '__main__':
     #学習
     if(args.learn):
         x,y,z = a._generate(data)
-        model,base = a._build(**parameters[name]['model'])
-        base.summary()
-        a._calculate(model,x,y,**parameters[name]['learning'])
-        a._save(base)
+        with KerasSession():
+            model,base = a._build(**parameters[name]['model'])
+            base.summary()
+            a._calculate(model,x,y,**parameters[name]['learning'])
+            a._save(base)
 
     #ハイパーパラメタ最適化
     elif(args.optimize>0):
@@ -438,21 +435,24 @@ if __name__ == '__main__':
     #過去データとの比較
     elif(args.compare_all):
         x,y,z = a._generate(data)
-        model,base = a._build(**parameters[name]['model'])
-        a._load(model)
-        a._validate(model,x,y)
+        with KerasSession():
+            model,base = a._build(**parameters[name]['model'])
+            a._load(model)
+            a._validate(model,x,y)
 
     #モデル出力
     elif(args.visualize):
         from keras.utils import plot_model
-        model,base = a._build(**parameters[name]['model'])
-        a._load(model)
-        base.summary()
-        plot_model(base, to_file='model.png')
+        with KerasSession():
+            model,base = a._build(**parameters[name]['model'])
+            a._load(model)
+            base.summary()
+            plot_model(base, to_file='model.png')
 
     #予測
     else:
         x,y,z = a._generate(data)
-        model,base = a._build(**parameters[name]['model'])
-        a._load(model)
-        a._predict(model,data)
+        with KerasSession():
+            model,base = a._build(**parameters[name]['model'])
+            a._load(model)
+            a._predict(model,data)
